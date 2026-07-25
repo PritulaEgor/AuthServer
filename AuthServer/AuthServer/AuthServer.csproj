@@ -10,12 +10,22 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.18" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.18" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.18" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.18" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.18" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.18" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.18">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.12" />
     <PackageReference Include="OpenIddict.AspNetCore" Version="7.6.0" />
     <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="7.6.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AuthServer.Application\AuthServer.Application.csproj" />
+    <ProjectReference Include="..\AuthServer.Domain\AuthServer.Domain.csproj" />
   </ItemGroup>
 
 </Project>
