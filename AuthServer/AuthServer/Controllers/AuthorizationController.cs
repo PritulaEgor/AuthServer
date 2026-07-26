@@ -7,29 +7,27 @@ using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using System.Security.Claims;
-using System.Security.Principal;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace AuthServer.Controllers
 {
     [ApiController]
-    [Route("/connect")]
+    [Route("connect")]
     public class AuthorizationController : Controller
     {
         private readonly IOpenIddictApplicationManager _applicationManager;
-        private readonly IUserClaimStore<ApplicationUser> _userClaimStore;
         private readonly UserManager<ApplicationUser> _userManager;
 
         public AuthorizationController(
             IOpenIddictApplicationManager applicationManager,
-            IUserClaimStore<ApplicationUser> userClaimStore)
+            UserManager<ApplicationUser> userManager)
         {
             _applicationManager = applicationManager;
-            _userClaimStore = userClaimStore;
+            _userManager = userManager;
         }
 
-        [HttpPost("connect/authorize"), Produces("application/json")]
-        [HttpGet("connect/authorize")]
+        [HttpPost("authorize"), Produces("application/json")]
+        [HttpGet("authorize")]
         public async Task<IActionResult> Authorize()
         {
             var request = HttpContext.GetOpenIddictServerRequest();
@@ -71,7 +69,11 @@ namespace AuthServer.Controllers
         {
             var request = HttpContext.GetOpenIddictServerRequest();
 
-            if (request.IsClientCredentialsGrantType())
+            if (request.IsAuthorizationCodeGrantType())
+            {
+                
+            }
+            else if (request.IsClientCredentialsGrantType())
             {
                 // Note: the client credentials are automatically validated by OpenIddict:
                 // if client_id or client_secret are invalid, this action won't be invoked.

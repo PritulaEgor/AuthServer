@@ -1,5 +1,6 @@
 ﻿using AuthServer.Data;
 using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
 
 namespace AuthServer.Extensions
 {
@@ -19,7 +20,7 @@ namespace AuthServer.Extensions
                 .AddCore(options =>
                 {
                     options.UseEntityFrameworkCore()
-                   .UseDbContext<AuthServerContext>();
+                            .UseDbContext<AuthServerContext>();
                 });
 
             // Register the OpenIddict server components.
@@ -27,19 +28,33 @@ namespace AuthServer.Extensions
                 .AddOpenIddict()
                 .AddServer(options =>
                 {
+                    // Enable authorization endpoint 
+                    options.SetAuthorizationEndpointUris("connect/authorize");
                     // Enable the token endpoint.
                     options.SetTokenEndpointUris("connect/token");
 
+                    // Enable user credentials flow
+                    options.AllowAuthorizationCodeFlow();
                     // Enable the client credentials flow.
-                    options.AllowClientCredentialsFlow();
+                    //options.AllowClientCredentialsFlow();
+
+                    //PKCE
+                    options.RequireProofKeyForCodeExchange();
+
+                    options.RegisterScopes(
+                            OpenIddictConstants.Scopes.OpenId,
+                            OpenIddictConstants.Scopes.Profile,
+                            OpenIddictConstants.Scopes.Email
+                            );
 
                     // Register the signing and encryption credentials.
                     options.AddDevelopmentEncryptionCertificate()
-                           .AddDevelopmentSigningCertificate();
+                            .AddDevelopmentSigningCertificate();
 
                     // Register the ASP.NET Core host and configure the ASP.NET Core options.
                     options.UseAspNetCore()
-                           .EnableTokenEndpointPassthrough();
+                            .EnableAuthorizationEndpointPassthrough()
+                            .EnableTokenEndpointPassthrough();
                 });
         }
     }

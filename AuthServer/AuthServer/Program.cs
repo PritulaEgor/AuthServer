@@ -2,6 +2,7 @@ using AuthServer.Domain.Data_Models;
 using AuthServer.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.Buffering;
 using OpenIddict.Abstractions;
 using Serilog;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -83,7 +84,19 @@ await using (var scope = app.Services.CreateAsyncScope())
             Permissions =
             {
                 Permissions.Endpoints.Token,
-                Permissions.GrantTypes.ClientCredentials
+                Permissions.Endpoints.Authorization,
+                Permissions.GrantTypes.ClientCredentials,
+                Permissions.GrantTypes.AuthorizationCode,
+                Permissions.GrantTypes.TokenExchange,
+                Permissions.GrantTypes.RefreshToken,
+                Permissions.ResponseTypes.Code,
+                Permissions.ResponseTypes.Token,
+                Permissions.Scopes.Profile,
+                Permissions.Scopes.Email
+            },
+            RedirectUris =
+            {
+                new Uri("https://localhost:5231")
             }
         });
     }
