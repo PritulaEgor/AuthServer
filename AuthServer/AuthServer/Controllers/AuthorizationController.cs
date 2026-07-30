@@ -69,9 +69,35 @@ namespace AuthServer.Controllers
         {
             var request = HttpContext.GetOpenIddictServerRequest();
 
+            if (request == null)
+            {
+                throw new InvalidOperationException();
+            }
+
+            // Auth Code exchange
+            // grant_type = authorization_code
+            // code - authorization code received from auth server 
+            // redirect_uri - idk if needed 
+            // client_id - registered app id 
+            // client_secret - registered app secret
             if (request.IsAuthorizationCodeGrantType())
             {
-                
+                var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+                if (!result.Succeeded)
+                {
+                    return Forbid(
+                        authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                        properties: new AuthenticationProperties(new Dictionary<string, string?>
+                        {
+                            [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The authorization code or PKCE verifier is invalid."
+                        }));
+                }
+
+                var principal = result.Principal;
+
+                return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             }
             else if (request.IsClientCredentialsGrantType())
             {

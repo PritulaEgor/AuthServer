@@ -92,7 +92,8 @@ await using (var scope = app.Services.CreateAsyncScope())
                 Permissions.ResponseTypes.Code,
                 Permissions.ResponseTypes.Token,
                 Permissions.Scopes.Profile,
-                Permissions.Scopes.Email
+                Permissions.Scopes.Email,
+                Permissions.Prefixes.Scope + "offline_access"
             },
             RedirectUris =
             {

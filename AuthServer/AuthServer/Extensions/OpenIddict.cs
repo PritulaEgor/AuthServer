@@ -36,7 +36,9 @@ namespace AuthServer.Extensions
                     // Enable user credentials flow
                     options.AllowAuthorizationCodeFlow();
                     // Enable the client credentials flow.
-                    //options.AllowClientCredentialsFlow();
+                    options.AllowClientCredentialsFlow();
+                    // Enable the refresh token flow.
+                    options.AllowRefreshTokenFlow();
 
                     //PKCE
                     options.RequireProofKeyForCodeExchange();
@@ -44,7 +46,8 @@ namespace AuthServer.Extensions
                     options.RegisterScopes(
                             OpenIddictConstants.Scopes.OpenId,
                             OpenIddictConstants.Scopes.Profile,
-                            OpenIddictConstants.Scopes.Email
+                            OpenIddictConstants.Scopes.Email,
+                            OpenIddictConstants.Scopes.OfflineAccess
                             );
 
                     // Register the signing and encryption credentials.
