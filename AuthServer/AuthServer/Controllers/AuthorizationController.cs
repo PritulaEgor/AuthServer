@@ -1,0 +1,134 @@
+﻿using AuthServer.Domain.Data_Models;
+using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using OpenIddict.Abstractions;
+using OpenIddict.Server.AspNetCore;
+using System.Security.Claims;
+using static OpenIddict.Abstractions.OpenIddictConstants;
+
+namespace AuthServer.Controllers
+{
+    [ApiController]
+    [Route("connect")]
+    public class AuthorizationController : Controller
+    {
+        private readonly IOpenIddictApplicationManager _applicationManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        public AuthorizationController(
+            IOpenIddictApplicationManager applicationManager,
+            UserManager<ApplicationUser> userManager)
+        {
+            _applicationManager = applicationManager;
+            _userManager = userManager;
+        }
+
+        [HttpPost("authorize"), Produces("application/json")]
+        [HttpGet("authorize")]
+        public async Task<IActionResult> Authorize()
+        {
+            var request = HttpContext.GetOpenIddictServerRequest();
+
+            if (request == null)
+            {
+                throw new InvalidOperationException();
+            }
+
+            if (!User.Identity!.IsAuthenticated)
+            {
+                // Отправляем его на страницу Login
+                return Challenge(
+                    new AuthenticationProperties
+                    {
+                        RedirectUri = Request.Path + Request.QueryString,
+                    });
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+
+            var identity = new ClaimsIdentity(
+                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+            identity.AddClaim(Claims.Subject, user.Id);
+            identity.AddClaim(Claims.Name, user.UserName);
+
+            var principal = new ClaimsPrincipal(identity);
+
+            principal.SetScopes(request.GetScopes());
+
+            return SignIn(
+                principal,
+                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        }
+
+        [HttpPost("token"), Produces("application/json")]
+        public async Task<IActionResult> Exchange()
+        {
+            var request = HttpContext.GetOpenIddictServerRequest();
+
+            if (request == null)
+            {
+                throw new InvalidOperationException();
+            }
+
+            // Auth Code exchange
+            // grant_type = authorization_code
+            // code - authorization code received from auth server 
+            // redirect_uri - idk if needed 
+            // client_id - registered app id 
+            // client_secret - registered app secret
+            if (request.IsAuthorizationCodeGrantType())
+            {
+                var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+                if (!result.Succeeded)
+                {
+                    return Forbid(
+                        authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                        properties: new AuthenticationProperties(new Dictionary<string, string?>
+                        {
+                            [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The authorization code or PKCE verifier is invalid."
+                        }));
+                }
+
+                var principal = result.Principal;
+
+                return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+            else if (request.IsClientCredentialsGrantType())
+            {
+                // Note: the client credentials are automatically validated by OpenIddict:
+                // if client_id or client_secret are invalid, this action won't be invoked.
+                var application = await _applicationManager.FindByClientIdAsync(request.ClientId) ??
+                    throw new InvalidOperationException("The application cannot be found.");
+
+                // Create a new ClaimsIdentity containing the claims that
+                // will be used to create an id_token, a token or a code.
+                var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
+
+                // Use the client_id as the subject identifier.
+                identity.SetClaim(Claims.Subject, await _applicationManager.GetClientIdAsync(application));
+                identity.SetClaim(Claims.Name, await _applicationManager.GetDisplayNameAsync(application));
+
+                identity.SetDestinations(static claim => claim.Type switch
+                {
+                    // Allow the "name" claim to be stored in both the access and identity tokens
+                    // when the "profile" scope was granted (by calling principal.SetScopes(...)).
+                    Claims.Name when claim.Subject.HasScope(Scopes.Profile)
+                        => [Destinations.AccessToken, Destinations.IdentityToken],
+
+                    // Otherwise, only store the claim in the access tokens.
+                    _ => [Destinations.AccessToken]
+                });
+
+                return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+
+            throw new NotImplementedException("The specified grant is not implemented.");
+        }
+    }
+}
